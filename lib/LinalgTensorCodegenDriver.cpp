@@ -12,6 +12,7 @@
 #include "Transforms/Passes.h"
 #include "Transforms/Transforms.h"
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
+#include "mlir/Conversion/AsyncToLLVM/AsyncToLLVM.h"
 #include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
 #include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
@@ -19,6 +20,7 @@
 #include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h"
 #include "mlir/Conversion/VectorToSCF/VectorToSCF.h"
 #include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Async/Passes.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
@@ -152,6 +154,9 @@ void LLVMLoweringPass::runOnOperation() {
   // have been missed previously.
   dynamicPM.addNestedPass<FuncOp>(createConvertVectorToSCFPass());
   dynamicPM.addNestedPass<FuncOp>(createConvertLinalgToLoopsPass());
+  dynamicPM.addPass(createAsyncToAsyncRuntimePass());
+  dynamicPM.addPass(createAsyncRuntimeRefCountingPass());
+  dynamicPM.addPass(createAsyncRuntimeRefCountingOptPass());
   dynamicPM.addPass(createCanonicalizerPass());
   dynamicPM.addPass(createLowerAffinePass());
   dynamicPM.addPass(createLowerToCFGPass());
@@ -168,6 +173,7 @@ void LLVMLoweringPass::runOnOperation() {
   // clang-format on
   dynamicPM.addNestedPass<FuncOp>(createConvertMathToLLVMPass());
   dynamicPM.addPass(createMemRefToLLVMPass());
+  dynamicPM.addPass(createConvertAsyncToLLVMPass());
   dynamicPM.addPass(createLowerToLLVMPass());
   dynamicPM.addPass(createCanonicalizerPass());
   dynamicPM.addPass(createCSEPass());
