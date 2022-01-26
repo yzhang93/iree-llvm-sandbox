@@ -22,7 +22,8 @@ class EinsumProblem(ProblemDefinition):
   specification of the operation is similar to that of np.einsum.
   """
 
-  def __init__(self, specification: str, domain: str, flop_count_per_iter: int):
+  def __init__(self, specification: str, domain: str, flop_count_per_iter: int, 
+               avx512: bool = True, prefer_vector_width: str = "512"):
     """Creates a new EinsumProblem with the given specification.
 
     The specification is a string of the format:
@@ -39,9 +40,13 @@ class EinsumProblem(ProblemDefinition):
     specification: textual specification of the einsum.
     domain: textual specification of the einsum dimension in iteration order.
     flop_count_per_iter: floating-point operations executed per iteration.
+    avx512: if the device is avx512.
+    prefer_vector_width: perfer vector width value.
     """
     self.specification = EinsumSpecification(specification, domain)
     self.flop_count_per_iter = flop_count_per_iter
+    self.avx512 = avx512
+    self.prefer_vector_width = prefer_vector_width
 
   @property
   def keys(self) -> List[str]:
@@ -123,8 +128,6 @@ class EinsumProblem(ProblemDefinition):
       module).
     mlir_types: types of arguments of this computation.
     """
-    global avx512
-
     func = builtin.FuncOp(name, (types, [types[-1]]))
     inplaceable_attributes = [False] * len(types)
     inplaceable_attributes[-1] = True
@@ -132,7 +135,7 @@ class EinsumProblem(ProblemDefinition):
     attach_inplaceable_attributes(func, inplaceable=inplaceable_attributes)
     attach_passthrough(
         func, [StringAttr.get(os.getenv('SANDBOX_INLINING', 'noinline'))],
-        avx512=avx512)
+        avx512=self.avx512, prefer_vector_width=self.prefer_vector_width)
 
     with InsertionPoint(func.add_entry_block()):
       output_tensor = func.arguments[-1]

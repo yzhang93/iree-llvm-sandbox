@@ -82,7 +82,8 @@ def attach_inplaceable_attributes(func: builtin.FuncOp,
 
 def attach_passthrough(func: builtin.FuncOp,
                        extras: Sequence[Attribute] = [],
-                       avx512: bool = False):
+                       avx512: bool = False,
+                       prefer_vector_width: str = "512"):
   attributes = extras[:]
   if avx512:
     attributes.append(
@@ -92,7 +93,7 @@ def attach_passthrough(func: builtin.FuncOp,
     attributes.append(
         ArrayAttr.get(
             [StringAttr.get("prefer-vector-width"),
-             StringAttr.get("512")]))
+             StringAttr.get(prefer_vector_width)]))
   else:
     attributes.append(
         ArrayAttr.get(
@@ -101,7 +102,7 @@ def attach_passthrough(func: builtin.FuncOp,
     attributes.append(
         ArrayAttr.get(
             [StringAttr.get("prefer-vector-width"),
-             StringAttr.get("256")]))
+             StringAttr.get(prefer_vector_width)]))
   func.attributes["passthrough"] = ArrayAttr.get(attributes)
 
 
